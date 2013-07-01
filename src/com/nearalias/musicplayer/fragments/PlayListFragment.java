@@ -4,8 +4,11 @@ import java.util.ArrayList;
 
 import android.app.ListFragment;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.nearalias.musicplayer.R;
 import com.nearalias.musicplayer.SongAdapter;
@@ -33,6 +36,12 @@ public class PlayListFragment extends ListFragment {
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
 		super.onListItemClick(l, v, position, id);
+		Toast.makeText(getActivity(), names.get(position), Toast.LENGTH_SHORT).show();
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+		return super.onCreateView(inflater, container, savedInstanceState);
 	}
 
 	@Override

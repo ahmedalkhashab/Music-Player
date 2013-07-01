@@ -16,6 +16,8 @@
 
 package com.nearalias.musicplayer;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import android.app.Activity;
@@ -25,9 +27,11 @@ import android.app.SearchManager;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -149,20 +153,21 @@ public class MainActivity extends Activity {
 
 	private void selectItem(int position) {
 		// update the main content by replacing fragments
-		Fragment fragment = new PlayListFragment();
-		Bundle args = new Bundle();
-		args.putInt(PlayListFragment.ARG_PLANET_NUMBER, position);
-		makeUpFakeSongs();
-		args.putStringArrayList(PlayListFragment.ARG_SONG_NAME, names);
-		args.putStringArrayList(PlayListFragment.ARG_SONG_ARTIST, artists);
-		args.putStringArrayList(PlayListFragment.ARG_SONG_ALBUM, albums);
-		args.putStringArrayList(PlayListFragment.ARG_SONG_GENRE, genres);
-		args.putStringArrayList(PlayListFragment.ARG_SONG_LYRIC, lyrics);
-		fragment.setArguments(args);
+		if (getFragmentManager().findFragmentById(R.id.content_frame) == null) {
+			Fragment fragment = new PlayListFragment();
+			Bundle args = new Bundle();
+			args.putInt(PlayListFragment.ARG_PLANET_NUMBER, position);
+			makeUpFakeSongs();
+			args.putStringArrayList(PlayListFragment.ARG_SONG_NAME, names);
+			args.putStringArrayList(PlayListFragment.ARG_SONG_ARTIST, artists);
+			args.putStringArrayList(PlayListFragment.ARG_SONG_ALBUM, albums);
+			args.putStringArrayList(PlayListFragment.ARG_SONG_GENRE, genres);
+			args.putStringArrayList(PlayListFragment.ARG_SONG_LYRIC, lyrics);
+			fragment.setArguments(args);
 
-		FragmentManager fragmentManager = getFragmentManager();
-		fragmentManager.beginTransaction().replace(R.id.content_frame, fragment).commit();
-
+			FragmentManager fragmentManager = getFragmentManager();
+			fragmentManager.beginTransaction().replace(R.id.content_frame, fragment).commit();
+		}
 		// update selected item and title, then close the drawer
 		drawerListView.setItemChecked(position, true);
 		setTitle(planetTitles[position]);
@@ -175,13 +180,45 @@ public class MainActivity extends Activity {
 		albums = new ArrayList<String>();
 		genres = new ArrayList<String>();
 		lyrics = new ArrayList<String>();
-		for (int i = 0; i < 20; i ++){
-			names.add("Song Number "+ (i+1));
-			artists.add("Artist Number "+ (i+1));
-			albums.add("Album Number "+ (i+1)+" - ");
-			genres.add("Genre Number "+ (i+1));
-			lyrics.add("Lyric Number "+ (i+1));
+		for (int i = 0; i < 20; i++) {
+			names.add("Song Number " + (i + 1));
+			artists.add("Artist Number " + (i + 1));
+			albums.add("Album Number " + (i + 1) + " - ");
+			genres.add("Genre Number " + (i + 1));
+			lyrics.add("Lyric Number " + (i + 1));
 		}
+		printDirectoriesToLog();
+	}
+
+	private void printDirectoriesToLog() {
+		File file = new File(Environment.getExternalStorageDirectory()+"/nearaliasMusicPlayer/");
+		Log.i("BLAH", file.toString()+"");
+		if (file.exists())
+			Log.i("BLAH", "file exists");
+		if (file.isDirectory())
+			Log.i("BLAH", "file is a folder");
+		File[] temp = Environment.getExternalStorageDirectory().listFiles();
+		for (File f : temp){
+			if (f.equals(file))
+				Log.i("BLAH", "match found! " + f);
+		}
+		Log.i("BLAH", Environment.getExternalStorageState());
+		
+//		for (File f : file) {
+//
+//			Log.i("BLAH", "getPath(): " + f.getPath());
+//
+//			// if (f.isDirectory()) {
+//			// File[] innerFiles = f.listFiles();
+//			//
+//			// for (int i = 0; i < innerFiles.length; i++) {
+//			// Log.i("Name", innerFiles[i].getPath() + "");
+//			// }
+//			// }
+//			//
+//			// if (f.isFile()) {
+//			// }
+//		}
 	}
 
 	@Override
