@@ -13,32 +13,42 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#EEEEEE"
-    android:orientation="vertical" >
+    android:background="#EEEEEE" >
 
     <TextView
+        android:id="@+id/name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?android:attr/activatedBackgroundIndicator"
-        android:gravity="center_vertical"
-        android:minHeight="?android:attr/listPreferredItemHeightSmall"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
-        android:textAppearance="?android:attr/textAppearanceListItemSmall"
+        android:textAppearance="?android:attr/textAppearanceLarge"
         android:textColor="#000000" />
 
     <TextView
-        android:layout_width="match_parent"
+        android:id="@+id/album"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="?android:attr/activatedBackgroundIndicator"
-        android:gravity="center_vertical"
-        android:minHeight="?android:attr/listPreferredItemHeightSmall"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/name"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
         android:textAppearance="?android:attr/textAppearanceListItemSmall"
-        android:textColor="#000000" />
+        android:textColor="#C0C0C0" />
 
-</LinearLayout>
+    <TextView
+        android:id="@+id/artist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_below="@id/name"
+        android:layout_toRightOf="@id/album"
+        android:textAppearance="?android:attr/textAppearanceListItemSmall"
+        android:textColor="#C0C0C0" />
+
+</RelativeLayout>
