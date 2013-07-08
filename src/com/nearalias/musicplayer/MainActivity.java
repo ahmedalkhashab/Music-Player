@@ -16,8 +16,6 @@
 
 package com.nearalias.musicplayer;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 
 import android.app.Activity;
@@ -27,11 +25,9 @@ import android.app.SearchManager;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -187,38 +183,6 @@ public class MainActivity extends Activity {
 			genres.add("Genre Number " + (i + 1));
 			lyrics.add("Lyric Number " + (i + 1));
 		}
-		printDirectoriesToLog();
-	}
-
-	private void printDirectoriesToLog() {
-		File file = new File(Environment.getExternalStorageDirectory()+"/nearaliasMusicPlayer/");
-		Log.i("BLAH", file.toString()+"");
-		if (file.exists())
-			Log.i("BLAH", "file exists");
-		if (file.isDirectory())
-			Log.i("BLAH", "file is a folder");
-		File[] temp = Environment.getExternalStorageDirectory().listFiles();
-		for (File f : temp){
-			if (f.equals(file))
-				Log.i("BLAH", "match found! " + f);
-		}
-		Log.i("BLAH", Environment.getExternalStorageState());
-		
-//		for (File f : file) {
-//
-//			Log.i("BLAH", "getPath(): " + f.getPath());
-//
-//			// if (f.isDirectory()) {
-//			// File[] innerFiles = f.listFiles();
-//			//
-//			// for (int i = 0; i < innerFiles.length; i++) {
-//			// Log.i("Name", innerFiles[i].getPath() + "");
-//			// }
-//			// }
-//			//
-//			// if (f.isFile()) {
-//			// }
-//		}
 	}
 
 	@Override
