@@ -80,8 +80,10 @@ public class PlayListFragment extends ListFragment {
 				Log.i("BLAH", "|||||| duration: " + mediaPlayer.getDuration());
 				Log.i("BLAH", "|||||| current location: " + mediaPlayer.getCurrentPosition());
 				Log.i("BLAH", "|||||| isPlaying: " + mediaPlayer.isPlaying());
-				if (!file.equals(files[2]))
-					mediaPlayer.reset();
+//				if (!file.equals(files[2]))
+//					mediaPlayer.reset();
+				if (file.equals(files[0]))
+					break;
 			}
 //			mediaPlayer.reset();
 //			mediaPlayer.release();
