@@ -1,4 +1,4 @@
-package com.nearalias.musicplayer.contentprovider;
+package com.nearalias.musicplayer.providers;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -11,6 +11,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
+import android.text.TextUtils;
 
 import com.nearalias.musicplayer.database.MusicPlayerDatabaseHelper;
 import com.nearalias.musicplayer.database.PlaylistTable;
@@ -25,7 +26,7 @@ public class MusicPlayerContentProvider extends ContentProvider {
 	private static final int MUSICPLAYER = 10;
 	private static final int MUSICPLAYER_ID = 20;
 
-	private static final String AUTHORITY = "com.nearalias.musicplayer.contentprovider";
+	private static final String AUTHORITY = "com.nearalias.musicplayer.providers";
 	private static final String BASE_PATH = "musicplayer";
 
 	public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/" + BASE_PATH);
@@ -85,8 +86,28 @@ public class MusicPlayerContentProvider extends ContentProvider {
 	}
 
 	@Override
-	public int delete(Uri arg0, String arg1, String[] arg2) {
-		return 0;
+	public int delete(Uri uri, String selection, String[] selectionArgs) {
+		int uriType = matcher.match(uri);
+		SQLiteDatabase database = databaseHelper.getWritableDatabase();
+		int rowsDeleted = 0;
+		switch (uriType) {
+		case MUSICPLAYER:
+			rowsDeleted = database.delete(SongTable.SONG_TABLE_NAME, selection, selectionArgs);
+			break;
+		case MUSICPLAYER_ID:
+			String id = uri.getLastPathSegment();
+			if (TextUtils.isEmpty(selection)) {
+				rowsDeleted = database.delete(SongTable.SONG_TABLE_NAME, SongTable.COLUMN_ID + "=" + id, null);
+			} else {
+				rowsDeleted = database.delete(SongTable.SONG_TABLE_NAME, SongTable.COLUMN_ID + "=" + id + " and " + selection,
+						selectionArgs);
+			}
+			break;
+		default:
+			throw new IllegalArgumentException("Unknown URI: " + uri);
+		}
+		getContext().getContentResolver().notifyChange(uri, null);
+		return rowsDeleted;
 	}
 
 	@Override
@@ -96,12 +117,43 @@ public class MusicPlayerContentProvider extends ContentProvider {
 
 	@Override
 	public Uri insert(Uri uri, ContentValues values) {
-		return null;
+		int uriType = matcher.match(uri);
+		SQLiteDatabase database = databaseHelper.getWritableDatabase();
+		long id = 0;
+		switch (uriType) {
+		case MUSICPLAYER:
+			id = database.insert(SongTable.SONG_TABLE_NAME, null, values);
+			break;
+		default:
+			throw new IllegalArgumentException("Unknown URI: " + uri);
+		}
+		getContext().getContentResolver().notifyChange(uri, null);
+		return Uri.parse(BASE_PATH + "/" + id);
 	}
 
 	@Override
 	public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
-		return 0;
+		int uriType = matcher.match(uri);
+		SQLiteDatabase database = databaseHelper.getWritableDatabase();
+		int rowsUpdated = 0;
+		switch (uriType) {
+		case MUSICPLAYER:
+			rowsUpdated = database.update(SongTable.SONG_TABLE_NAME, values, selection, selectionArgs);
+			break;
+		case MUSICPLAYER_ID:
+			String id = uri.getLastPathSegment();
+			if (TextUtils.isEmpty(selection)) {
+				rowsUpdated = database.update(SongTable.SONG_TABLE_NAME, values, SongTable.COLUMN_ID + "=" + id, null);
+			} else {
+				rowsUpdated = database.update(SongTable.SONG_TABLE_NAME, values, SongTable.COLUMN_ID + "=" + id + " and " + selection,
+						selectionArgs);
+			}
+			break;
+		default:
+			throw new IllegalArgumentException("Unknown URI: " + uri);
+		}
+		getContext().getContentResolver().notifyChange(uri, null);
+		return rowsUpdated;
 	}
 
 }
