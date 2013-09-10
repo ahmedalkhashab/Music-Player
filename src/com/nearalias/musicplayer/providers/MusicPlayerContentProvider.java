@@ -22,10 +22,6 @@ public class MusicPlayerContentProvider extends ContentProvider {
 
 	private MusicPlayerDatabaseHelper databaseHelper;
 
-	// UriMatchers
-	private static final int MUSICPLAYER = 10;
-	private static final int MUSICPLAYER_ID = 20;
-
 	private static final String AUTHORITY = "com.nearalias.musicplayer.providers";
 	private static final String BASE_PATH = "musicplayer";
 
@@ -33,10 +29,16 @@ public class MusicPlayerContentProvider extends ContentProvider {
 	public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + BASE_PATH;
 	public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/" + BASE_PATH;
 
-	private static final UriMatcher matcher = new UriMatcher(UriMatcher.NO_MATCH);
+	private static final class UriMatches {
+		private static final int MUSICPLAYER = 0;
+		private static final int MUSICPLAYER_ID = 1;
+	}
+
+	private static final UriMatcher sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
+
 	static {
-		matcher.addURI(AUTHORITY, BASE_PATH, MUSICPLAYER);
-		matcher.addURI(AUTHORITY, BASE_PATH + "/#", MUSICPLAYER_ID);
+		sUriMatcher.addURI(AUTHORITY, BASE_PATH, UriMatches.MUSICPLAYER);
+		sUriMatcher.addURI(AUTHORITY, BASE_PATH + "/#", UriMatches.MUSICPLAYER_ID);
 	}
 
 	@Override
@@ -52,12 +54,12 @@ public class MusicPlayerContentProvider extends ContentProvider {
 		SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
 		queryBuilder.setTables(SongTable.SONG_TABLE_NAME);
 
-		int uriType = matcher.match(uri);
+		int uriType = sUriMatcher.match(uri);
 
 		switch (uriType) {
-		case MUSICPLAYER:
+		case UriMatches.MUSICPLAYER:
 			break;
-		case MUSICPLAYER_ID:
+		case UriMatches.MUSICPLAYER_ID:
 			queryBuilder.appendWhere(SongTable.COLUMN_ID + "=" + uri.getLastPathSegment());
 			break;
 		default:
@@ -87,14 +89,14 @@ public class MusicPlayerContentProvider extends ContentProvider {
 
 	@Override
 	public int delete(Uri uri, String selection, String[] selectionArgs) {
-		int uriType = matcher.match(uri);
+		int uriType = sUriMatcher.match(uri);
 		SQLiteDatabase database = databaseHelper.getWritableDatabase();
 		int rowsDeleted = 0;
 		switch (uriType) {
-		case MUSICPLAYER:
+		case UriMatches.MUSICPLAYER:
 			rowsDeleted = database.delete(SongTable.SONG_TABLE_NAME, selection, selectionArgs);
 			break;
-		case MUSICPLAYER_ID:
+		case UriMatches.MUSICPLAYER_ID:
 			String id = uri.getLastPathSegment();
 			if (TextUtils.isEmpty(selection)) {
 				rowsDeleted = database.delete(SongTable.SONG_TABLE_NAME, SongTable.COLUMN_ID + "=" + id, null);
@@ -117,11 +119,11 @@ public class MusicPlayerContentProvider extends ContentProvider {
 
 	@Override
 	public Uri insert(Uri uri, ContentValues values) {
-		int uriType = matcher.match(uri);
+		int uriType = sUriMatcher.match(uri);
 		SQLiteDatabase database = databaseHelper.getWritableDatabase();
 		long id = 0;
 		switch (uriType) {
-		case MUSICPLAYER:
+		case UriMatches.MUSICPLAYER:
 			id = database.insert(SongTable.SONG_TABLE_NAME, null, values);
 			break;
 		default:
@@ -133,14 +135,14 @@ public class MusicPlayerContentProvider extends ContentProvider {
 
 	@Override
 	public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
-		int uriType = matcher.match(uri);
+		int uriType = sUriMatcher.match(uri);
 		SQLiteDatabase database = databaseHelper.getWritableDatabase();
 		int rowsUpdated = 0;
 		switch (uriType) {
-		case MUSICPLAYER:
+		case UriMatches.MUSICPLAYER:
 			rowsUpdated = database.update(SongTable.SONG_TABLE_NAME, values, selection, selectionArgs);
 			break;
-		case MUSICPLAYER_ID:
+		case UriMatches.MUSICPLAYER_ID:
 			String id = uri.getLastPathSegment();
 			if (TextUtils.isEmpty(selection)) {
 				rowsUpdated = database.update(SongTable.SONG_TABLE_NAME, values, SongTable.COLUMN_ID + "=" + id, null);
