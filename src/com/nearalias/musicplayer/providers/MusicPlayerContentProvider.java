@@ -1,10 +1,8 @@
 package com.nearalias.musicplayer.providers;
 
-import java.util.Arrays;
-import java.util.HashSet;
-
 import android.content.ContentProvider;
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
@@ -23,86 +21,184 @@ public class MusicPlayerContentProvider extends ContentProvider {
 	private MusicPlayerDatabaseHelper databaseHelper;
 
 	private static final String AUTHORITY = "com.nearalias.musicplayer.providers";
-	private static final String BASE_PATH = "musicplayer";
 
-	public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/" + BASE_PATH);
-	public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + BASE_PATH;
-	public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/" + BASE_PATH;
+	private static final class Paths {
+		private static final String SONG_PATH = "song_uri";
+		private static final String PLAYLIST_PATH = "playlist_uri";
+		private static final String SONG_IN_PLAYLIST_PATH = "song_in_playlist_uri";
+	}
+
+	public static final Uri SONG_CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/" + Paths.SONG_PATH);
+	public static final Uri PLAYLIST_CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/" + Paths.PLAYLIST_PATH);
+	public static final Uri SONG_IN_PLAYLIST_CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/" + Paths.SONG_IN_PLAYLIST_PATH);
+	public static final String SONG_CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.nearalias.musicplayer.song";
+	public static final String SONG_CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.nearalias.musicplayer.song";
+	public static final String PLAYLIST_CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.nearalias.musicplayer.playlist";
+	public static final String PLAYLIST_CONTENT_ITEM_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.nearalias.musicplayer.playlist";
+	public static final String SONG_IN_PLAYLIST_CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE
+			+ "/vnd.nearalias.musicplayer.song_in_playlist";
+	public static final String SONG_IN_PLAYLIST_CONTENT_ITEM_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE
+			+ "/vnd.nearalias.musicplayer.song_in_playlist";
 
 	private static final class UriMatches {
-		private static final int MUSICPLAYER = 0;
-		private static final int MUSICPLAYER_ID = 1;
+		private static final int SONG = 0;
+		private static final int SONG_ID = 1;
+		private static final int PLAYLIST = 2;
+		private static final int PLAYLIST_ID = 3;
+		private static final int SONG_IN_PLAYLIST = 4;
+		private static final int SONG_IN_PLAYLIST_ID = 5;
 	}
 
 	private static final UriMatcher sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
-
 	static {
-		sUriMatcher.addURI(AUTHORITY, BASE_PATH, UriMatches.MUSICPLAYER);
-		sUriMatcher.addURI(AUTHORITY, BASE_PATH + "/#", UriMatches.MUSICPLAYER_ID);
+		sUriMatcher.addURI(AUTHORITY, Paths.SONG_PATH, UriMatches.SONG);
+		sUriMatcher.addURI(AUTHORITY, Paths.SONG_PATH + "/#", UriMatches.SONG_ID);
+		sUriMatcher.addURI(AUTHORITY, Paths.PLAYLIST_PATH, UriMatches.PLAYLIST);
+		sUriMatcher.addURI(AUTHORITY, Paths.PLAYLIST_PATH + "/#", UriMatches.PLAYLIST_ID);
+		sUriMatcher.addURI(AUTHORITY, Paths.SONG_IN_PLAYLIST_PATH, UriMatches.SONG_IN_PLAYLIST);
+		sUriMatcher.addURI(AUTHORITY, Paths.SONG_IN_PLAYLIST_PATH + "/#", UriMatches.SONG_IN_PLAYLIST_ID);
 	}
 
 	@Override
 	public boolean onCreate() {
 		databaseHelper = new MusicPlayerDatabaseHelper(getContext());
-		return false;
+		return true;
+	}
+
+	@Override
+	public String getType(final Uri uri) {
+		switch (sUriMatcher.match(uri)) {
+
+		case UriMatches.SONG:
+			return SONG_CONTENT_TYPE;
+		case UriMatches.SONG_ID:
+			return SONG_CONTENT_ITEM_TYPE;
+
+		case UriMatches.PLAYLIST:
+			return PLAYLIST_CONTENT_TYPE;
+		case UriMatches.PLAYLIST_ID:
+			return PLAYLIST_CONTENT_ITEM_TYPE;
+
+		case UriMatches.SONG_IN_PLAYLIST:
+			return SONG_IN_PLAYLIST_CONTENT_TYPE;
+		case UriMatches.SONG_IN_PLAYLIST_ID:
+			return SONG_IN_PLAYLIST_CONTENT_ITEM_TYPE;
+
+		default:
+			throw new IllegalArgumentException("Unsupported URI: " + uri);
+		}
+	}
+
+	@Override
+	public Uri insert(Uri uri, ContentValues values) {
+		Uri resultUri = null;
+		SQLiteDatabase database = databaseHelper.getWritableDatabase();
+		long id = 0;
+		switch (sUriMatcher.match(uri)) {
+		case UriMatches.SONG:
+			id = database.insert(SongTable.SONG_TABLE_NAME, null, values);
+			if (id > 0) {
+				resultUri = ContentUris.withAppendedId(SONG_CONTENT_URI, id);
+			}
+			break;
+		case UriMatches.PLAYLIST:
+			id = database.insert(PlaylistTable.PLAYLIST_TABLE_NAME, null, values);
+			if (id > 0) {
+				resultUri = ContentUris.withAppendedId(PLAYLIST_CONTENT_URI, id);
+			}
+			break;
+		case UriMatches.SONG_IN_PLAYLIST:
+			id = database.insert(SongInPlaylistTable.SONG_IN_PLAYLIST_TABLE_NAME, null, values);
+			if (id > 0) {
+				resultUri = ContentUris.withAppendedId(SONG_IN_PLAYLIST_CONTENT_URI, id);
+			}
+		default:
+			throw new IllegalArgumentException("Unknown URI: " + uri);
+		}
+		if (id > 0) {
+			getContext().getContentResolver().notifyChange(resultUri, null);
+			return resultUri;
+		}
+		return null;
 	}
 
 	@Override
 	public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
-		verifyColumnsAreValid(projection);
+		// verifyColumnsAreValid(projection);
 
+		SQLiteDatabase database = databaseHelper.getWritableDatabase();
 		SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
-		queryBuilder.setTables(SongTable.SONG_TABLE_NAME);
 
-		int uriType = sUriMatcher.match(uri);
-
-		switch (uriType) {
-		case UriMatches.MUSICPLAYER:
+		switch (sUriMatcher.match(uri)) {
+		case UriMatches.SONG:
 			break;
-		case UriMatches.MUSICPLAYER_ID:
+		case UriMatches.SONG_ID:
+			queryBuilder.setTables(SongTable.SONG_TABLE_NAME);
 			queryBuilder.appendWhere(SongTable.COLUMN_ID + "=" + uri.getLastPathSegment());
+			break;
+		case UriMatches.PLAYLIST:
+			break;
+		case UriMatches.PLAYLIST_ID:
+			queryBuilder.setTables(PlaylistTable.PLAYLIST_TABLE_NAME);
+			queryBuilder.appendWhere(PlaylistTable.COLUMN_ID + "=" + uri.getLastPathSegment());
+			break;
+		case UriMatches.SONG_IN_PLAYLIST:
+			break;
+		case UriMatches.SONG_IN_PLAYLIST_ID:
+			queryBuilder.setTables(SongInPlaylistTable.SONG_IN_PLAYLIST_TABLE_NAME);
+			queryBuilder.appendWhere(SongInPlaylistTable.COLUMN_ID + "=" + uri.getLastPathSegment());
 			break;
 		default:
 			throw new IllegalArgumentException("Unknown URI: " + uri);
 		}
 
-		SQLiteDatabase database = databaseHelper.getWritableDatabase();
 		Cursor cursor = queryBuilder.query(database, projection, selection, selectionArgs, null, null, sortOrder);
 		cursor.setNotificationUri(getContext().getContentResolver(), uri);
 
 		return cursor;
 	}
 
-	private void verifyColumnsAreValid(String[] projection) {
-		String[] validColumnsArray = { SongTable.COLUMN_ALBUM, SongTable.COLUMN_ARTIST, SongTable.COLUMN_GENRE, SongTable.COLUMN_ID,
-				SongTable.COLUMN_LYRICS, SongTable.COLUMN_NAME, PlaylistTable.COLUMN_ID, PlaylistTable.COLUMN_NAME,
-				SongInPlaylistTable.COLUMN_ID, SongInPlaylistTable.COLUMN_PLAYLIST_ID, SongInPlaylistTable.COLUMN_SONG_ID };
-
-		if (projection != null) {
-			HashSet<String> queriedColumns = new HashSet<String>(Arrays.asList(projection));
-			HashSet<String> validColumns = new HashSet<String>(Arrays.asList(validColumnsArray));
-			if (!validColumns.containsAll(queriedColumns)) {
-				throw new IllegalArgumentException("Invalid column in projection");
-			}
-		}
-	}
-
 	@Override
 	public int delete(Uri uri, String selection, String[] selectionArgs) {
-		int uriType = sUriMatcher.match(uri);
 		SQLiteDatabase database = databaseHelper.getWritableDatabase();
 		int rowsDeleted = 0;
-		switch (uriType) {
-		case UriMatches.MUSICPLAYER:
+		String id;
+		switch (sUriMatcher.match(uri)) {
+		case UriMatches.SONG:
 			rowsDeleted = database.delete(SongTable.SONG_TABLE_NAME, selection, selectionArgs);
 			break;
-		case UriMatches.MUSICPLAYER_ID:
-			String id = uri.getLastPathSegment();
+		case UriMatches.SONG_ID:
+			id = uri.getLastPathSegment();
 			if (TextUtils.isEmpty(selection)) {
 				rowsDeleted = database.delete(SongTable.SONG_TABLE_NAME, SongTable.COLUMN_ID + "=" + id, null);
 			} else {
 				rowsDeleted = database.delete(SongTable.SONG_TABLE_NAME, SongTable.COLUMN_ID + "=" + id + " and " + selection,
 						selectionArgs);
+			}
+			break;
+		case UriMatches.PLAYLIST:
+			rowsDeleted = database.delete(PlaylistTable.PLAYLIST_TABLE_NAME, selection, selectionArgs);
+			break;
+		case UriMatches.PLAYLIST_ID:
+			id = uri.getLastPathSegment();
+			if (TextUtils.isEmpty(selection)) {
+				rowsDeleted = database.delete(PlaylistTable.PLAYLIST_TABLE_NAME, PlaylistTable.COLUMN_ID + "=" + id, null);
+			} else {
+				rowsDeleted = database.delete(PlaylistTable.PLAYLIST_TABLE_NAME, PlaylistTable.COLUMN_ID + "=" + id + " and " + selection,
+						selectionArgs);
+			}
+			break;
+		case UriMatches.SONG_IN_PLAYLIST:
+			rowsDeleted = database.delete(SongInPlaylistTable.SONG_IN_PLAYLIST_TABLE_NAME, selection, selectionArgs);
+			break;
+		case UriMatches.SONG_IN_PLAYLIST_ID:
+			id = uri.getLastPathSegment();
+			if (TextUtils.isEmpty(selection)) {
+				rowsDeleted = database.delete(SongInPlaylistTable.SONG_IN_PLAYLIST_TABLE_NAME, SongInPlaylistTable.COLUMN_ID + "=" + id,
+						null);
+			} else {
+				rowsDeleted = database.delete(SongInPlaylistTable.SONG_IN_PLAYLIST_TABLE_NAME, SongInPlaylistTable.COLUMN_ID + "=" + id
+						+ " and " + selection, selectionArgs);
 			}
 			break;
 		default:
@@ -113,42 +209,46 @@ public class MusicPlayerContentProvider extends ContentProvider {
 	}
 
 	@Override
-	public String getType(Uri uri) {
-		return null;
-	}
-
-	@Override
-	public Uri insert(Uri uri, ContentValues values) {
-		int uriType = sUriMatcher.match(uri);
-		SQLiteDatabase database = databaseHelper.getWritableDatabase();
-		long id = 0;
-		switch (uriType) {
-		case UriMatches.MUSICPLAYER:
-			id = database.insert(SongTable.SONG_TABLE_NAME, null, values);
-			break;
-		default:
-			throw new IllegalArgumentException("Unknown URI: " + uri);
-		}
-		getContext().getContentResolver().notifyChange(uri, null);
-		return Uri.parse(BASE_PATH + "/" + id);
-	}
-
-	@Override
 	public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
-		int uriType = sUriMatcher.match(uri);
 		SQLiteDatabase database = databaseHelper.getWritableDatabase();
 		int rowsUpdated = 0;
-		switch (uriType) {
-		case UriMatches.MUSICPLAYER:
+		String id;
+		switch (sUriMatcher.match(uri)) {
+		case UriMatches.SONG:
 			rowsUpdated = database.update(SongTable.SONG_TABLE_NAME, values, selection, selectionArgs);
 			break;
-		case UriMatches.MUSICPLAYER_ID:
-			String id = uri.getLastPathSegment();
+		case UriMatches.SONG_ID:
+			id = uri.getLastPathSegment();
 			if (TextUtils.isEmpty(selection)) {
 				rowsUpdated = database.update(SongTable.SONG_TABLE_NAME, values, SongTable.COLUMN_ID + "=" + id, null);
 			} else {
 				rowsUpdated = database.update(SongTable.SONG_TABLE_NAME, values, SongTable.COLUMN_ID + "=" + id + " and " + selection,
 						selectionArgs);
+			}
+			break;
+		case UriMatches.PLAYLIST:
+			rowsUpdated = database.update(PlaylistTable.PLAYLIST_TABLE_NAME, values, selection, selectionArgs);
+			break;
+		case UriMatches.PLAYLIST_ID:
+			id = uri.getLastPathSegment();
+			if (TextUtils.isEmpty(selection)) {
+				rowsUpdated = database.update(PlaylistTable.PLAYLIST_TABLE_NAME, values, PlaylistTable.COLUMN_ID + "=" + id, null);
+			} else {
+				rowsUpdated = database.update(PlaylistTable.PLAYLIST_TABLE_NAME, values, PlaylistTable.COLUMN_ID + "=" + id + " and "
+						+ selection, selectionArgs);
+			}
+			break;
+		case UriMatches.SONG_IN_PLAYLIST:
+			rowsUpdated = database.update(SongInPlaylistTable.SONG_IN_PLAYLIST_TABLE_NAME, values, selection, selectionArgs);
+			break;
+		case UriMatches.SONG_IN_PLAYLIST_ID:
+			id = uri.getLastPathSegment();
+			if (TextUtils.isEmpty(selection)) {
+				rowsUpdated = database.update(SongInPlaylistTable.SONG_IN_PLAYLIST_TABLE_NAME, values, SongInPlaylistTable.COLUMN_ID + "="
+						+ id, null);
+			} else {
+				rowsUpdated = database.update(SongInPlaylistTable.SONG_IN_PLAYLIST_TABLE_NAME, values, SongInPlaylistTable.COLUMN_ID + "="
+						+ id + " and " + selection, selectionArgs);
 			}
 			break;
 		default:
